@@ -19,10 +19,13 @@ local function handleAppEvent(appName, eventType, appObject)
             print("Preview terminated")
             poller.stop()
         elseif eventType == hs.application.watcher.activated then
-            print("Preview activated")
+            print("Preview activated (in focus)")
             if not poller.isRunning() then
                 poller.start()
             end
+        elseif eventType == hs.application.watcher.deactivated then
+            print("Preview deactivated (lost focus)")
+            poller.stop()
         end
     end
 end
@@ -35,10 +38,15 @@ function appWatcher.start()
     print("Starting app watcher")
     myAppWatcher:start()
 
-    -- Check if Preview is already running
+    -- Check if Preview is already running AND is the frontmost app
     if utils.isPreviewRunning() then
-        print("Preview is already running, starting polling")
-        poller.start()
+        local preview = hs.application.get("Preview")
+        if preview and preview:isFrontmost() then
+            print("Preview is already running and in focus, starting polling")
+            poller.start()
+        else
+            print("Preview is running but not in focus")
+        end
     else
         print("Preview is not running")
     end
