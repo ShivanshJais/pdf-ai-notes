@@ -2,22 +2,34 @@
 -- Monitors Preview windows and detects page changes
 
 local utils = require("pdf-ai-notes.modules.utils")
+local db = require("pdf-ai-notes.modules.database")
 
 local poller = {}
 local pagePollTimer = nil
 local lastPage = nil
+local lastPdfPath = nil
 
 -- Configuration
 local POLL_INTERVAL = 1.5 -- seconds
 
 -- Callback function when page changes
 -- Can be overridden by user
-function poller.onPageChange(pageNumber, windowTitle, pdfPath)
+function poller.onPageChange(pageNumber, windowTitle, pdfPath, pageText, pdfId)
     print("Page changed to: " .. pageNumber)
     print("PDF Path: " .. (pdfPath or "unknown"))
-    hs.alert.show("Preview page changed: " .. pageNumber)
+
+    -- Record page view in database
+    if pdfId then
+        db.recordPageView(pdfId, pageNumber)
+        print("Page view recorded in database")
+    end
+
     -- TODO: Send to Python server here
-    print("Sending to Python server: page=" .. pageNumber .. ", path=" .. (pdfPath or "unknown"))
+    -- When Python returns notes, use:
+    -- local pageId = db.getPageId(pdfId, pageNumber)
+    -- db.storeNote(pageId, noteContent, noteType, directiveName)
+
+    hs.alert.show("Page " .. pageNumber .. " recorded")
 end
 
 -- Start polling Preview windows for page changes
@@ -46,13 +58,33 @@ function poller.start()
             -- Get the first visible window (or you could iterate through all)
             local win = windows[1]
             local title = win:title()
-            print("Window title: " .. (title or "nil"))
 
             local currentPage = utils.parsePageNumber(title)
             if currentPage and currentPage ~= lastPage then
                 lastPage = currentPage
                 local pdfPath = utils.getPDFPath(win)
-                poller.onPageChange(currentPage, title, pdfPath)
+
+                -- Track PDF in database with metadata
+                local pdfId = nil
+                if pdfPath then
+                    local metadata = utils.getFileMetadata(pdfPath)
+                    if metadata then
+                        local fileName = pdfPath:match("([^/]+)$")
+                        pdfId = db.getOrCreatePDF(
+                            pdfPath,
+                            fileName,
+                            metadata.size,
+                            metadata.modified_at
+                        )
+                    end
+
+                    -- Extract and sanitize text
+                    local rawText = utils.extractPageText(pdfPath, currentPage)
+                    local pageText = utils.sanitizeText(rawText)
+
+                    -- Pass to callback with database ID
+                    poller.onPageChange(currentPage, title, pdfPath, pageText, pdfId)
+                end
             end
         else
             print("No visible windows")
