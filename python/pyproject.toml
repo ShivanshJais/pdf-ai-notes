@@ -1,0 +1,14 @@
+[project]
+name = "pdf-ai-notes"
+version = "0.1.0"
+description = "AI-powered PDF reading companion with automated note generation"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.119.0",
+    "openai>=2.3.0",
+    "pydantic>=2.12.2",
+    "pydantic-settings>=2.11.0",
+    "python-dotenv>=1.1.1",
+    "requests>=2.32.5",
+]

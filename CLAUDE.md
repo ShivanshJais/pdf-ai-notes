@@ -1,0 +1,1 @@
+- Always keep a md file where you document everything you make or change so it is easier to track the project and have a overall better development experience

@@ -1,0 +1,19 @@
+# Hammerspoon
+notes.db
+
+# Python
+.venv
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# test
+api-test.py
